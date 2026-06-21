@@ -1,0 +1,9 @@
+{
+  "room": 3,
+  "runs": 50,
+  "success_rate": 0.8599999999999999,
+  "average_objects_collected": 4.3,
+  "num_objects": 5,
+  "average_reward": 0.021951576092235917,
+  "csv": "outputs/runs/evaluation_room3_50runs.csv"
+}

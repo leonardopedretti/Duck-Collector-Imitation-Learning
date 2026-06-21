@@ -1,0 +1,77 @@
+Bootstrap: docker
+From: mirror.gcr.io/library/ubuntu:24.04
+
+%labels
+    Maintainer you
+    OS "Ubuntu 24.04 (Noble)"
+
+%files
+    environment.yml /opt/env/environment.yml
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update
+    apt-get install -y --no-install-recommends --fix-missing \
+        ca-certificates curl wget bzip2 \
+        vim nano less unzip git gdb \
+        locales tzdata software-properties-common \
+        libgl1 libglu1-mesa libegl1 xvfb \
+        libgl1-mesa-dri mesa-utils \
+        mesa-vulkan-drivers \
+        gdal-bin libgdal-dev \
+        libxext6 libxrender1 libsm6 \
+        build-essential
+    rm -rf /var/lib/apt/lists/*
+
+    sed -i 's/^# *en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen
+    locale-gen en_US.UTF-8
+    update-locale LANG=en_US.UTF-8
+    echo "LANG=en_US.UTF-8" > /etc/default/locale
+
+    # Miniconda
+    MINICONDA=Miniconda3-latest-Linux-x86_64.sh
+    wget -q https://repo.anaconda.com/miniconda/${MINICONDA} -O /tmp/miniconda.sh
+    bash /tmp/miniconda.sh -b -p /opt/conda
+    rm -f /tmp/miniconda.sh
+
+    /opt/conda/bin/conda config --system --set always_yes yes
+    /opt/conda/bin/conda config --system --set changeps1 no
+    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
+    /opt/conda/bin/conda env create -f /opt/env/environment.yml
+    # xvfb-run with activated environment
+    cat >/usr/local/bin/xvfb-shell <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+. /opt/conda/etc/profile.d/conda.sh
+conda activate duck_collector
+exec xvfb-run -s "-screen 0 1280x720x24" bash "$@"
+EOF
+    chmod +x /usr/local/bin/xvfb-shell
+
+    apt-get clean
+    /opt/conda/bin/conda clean -afy
+    rm -rf /var/lib/apt/lists/* /root/.cache
+
+
+%environment
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+    export CONDA_ENV_NAME=duck_collector
+    export PATH=/opt/conda/bin:$PATH
+    export PATH=/opt/conda/envs/${CONDA_ENV_NAME}/bin:$PATH
+    export LIBGL_ALWAYS_SOFTWARE=1
+    export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+    export GALLIUM_DRIVER=llvmpipe
+    export PYOPENGL_PLATFORM=glx
+    export MOTD="Welcome to the Apptainer shell!"
+    echo "$MOTD"
+
+%runscript
+    exec /bin/bash -l
+
+%help
+    Ubuntu 24.04 base image with Miniconda under /opt/conda.

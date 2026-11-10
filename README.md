@@ -180,4 +180,4 @@ python scripts/collect_demonstrations.py 0 --path data/demonstrations
 ```
 
 Only rooms `0`, `1`, and `2` should be used for training. Room `3` is reserved
-as the held-out deployment scenario.
+as the held-out deployment scenario
